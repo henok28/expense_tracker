@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id       Int       @id @default(autoincrement())
+  fullname String
+  email    String    @unique
+  phone    String
+  expenses Expense[]
+}
+
+model Category {
+  id              Int              @id @default(autoincrement())
+  category_name   String
+  expenses        Expense[]
+  categoryBudgets CategoryBudget[]
+}
+
+model Expense {
+  id               Int      @id @default(autoincrement())
+  amount           Decimal
+  date             DateTime
+  transaction_type String
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+}
+
+model CategoryBudget {
+  id     Int     @id @default(autoincrement())
+  amount Decimal
+  month  Int
+  year   Int
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+}
