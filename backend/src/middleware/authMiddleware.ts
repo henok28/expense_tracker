@@ -54,13 +54,13 @@ export const protect = async (
 
     // 3. CHECKING IF THE USER EXISTS IN THE DB
     const currentUser = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: decoded.id, active: true },
     });
 
     if (!currentUser)
       return res.status(401).json({
         status: "Failed",
-        message: "The account that belonging to this token no longer exists",
+        message: "The account that belongs to this token no longer exists",
       });
 
     // 4. CHECKING IF THE USER CHANGED THE PASSWORD AFTER TOKEN HAS BEEN ISSUED
