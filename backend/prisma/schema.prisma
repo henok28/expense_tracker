@@ -7,39 +7,44 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role{
+enum Role {
   USER
   ADMIN
 }
 
 model User {
-  id       Int       @id @default(autoincrement())
+  id       Int     @id @default(autoincrement())
   fullname String
-  role Role @default(USER)
-  email    String    @unique
+  role     Role    @default(USER)
+  email    String  @unique
   phone    String
-  active Boolean @default(true)
-
-  
+  active   Boolean @default(true)
 
   //AUTH fields
-  password_hash String
-  password_changed_at DateTime?
-  password_reset_token String? @unique
+  password_hash          String
+  password_changed_at    DateTime?
+  password_reset_token   String?   @unique
   password_reset_expires DateTime?
-
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   expenses Expense[]
+  category Category[]
 }
 
 model Category {
-  id              Int              @id @default(autoincrement())
-  category_name   String
-  expenses        Expense[]
-  categoryBudgets CategoryBudget[]
+  id                   Int              @id @default(autoincrement())
+  category_name        String
+  category_description String?
+  expenses             Expense[]
+  categoryBudgets      CategoryBudget[]
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model Expense {
