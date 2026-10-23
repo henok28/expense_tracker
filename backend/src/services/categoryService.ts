@@ -36,7 +36,7 @@ export class CategoryServices {
     const category = await prisma.category.create({
       data: {
         category_name: data.category_name,
-        category_desciption: data.category_description,
+        category_description: data.category_description ?? null, //this is becuz of exactOptionalPropertyTypes read more if you want
         userId: targetUserId,
       },
     });
@@ -93,6 +93,8 @@ export class CategoryServices {
         );
       }
     } else if (existingCategory.userId !== userId) {
+      if (role === Role.ADMIN)
+        throw new AppError("You can only edit company wide categories", 403);
       throw new AppError("You can only edit your own personal categories", 403);
     }
 

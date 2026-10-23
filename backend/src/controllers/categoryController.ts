@@ -7,6 +7,7 @@ export const createCategory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user!.id;
     const role = req.user!.role;
+    // console.log(req.body);
 
     const category = await CategoryServices.createCategory(
       userId,

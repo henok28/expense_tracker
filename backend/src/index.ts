@@ -10,6 +10,7 @@ import { timeStamp } from "node:console";
 //
 import authRoute from "./routes/authRoute.js";
 import userRoute from "./routes/userRoute.js";
+import categoryRoute from "./routes/categoryRoute.js";
 import globalErrorHandler from "./middleware/errorHandler.js";
 
 const app: Application = express();
@@ -29,6 +30,7 @@ app.get("/health", (req: Request, res: Response) => {
 // Mounting auth route
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
+app.use("/api/v1/category", categoryRoute);
 
 app.use(globalErrorHandler);
 
