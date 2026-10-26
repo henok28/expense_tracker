@@ -29,6 +29,7 @@ export class ExpenseServices {
       );
 
     // Guard if not business
+
     if (expense_type === ExpenseType.BUSINESS && category.userId !== null) {
       throw new AppError(
         "Business expenses must be filed under a company-wide category",

@@ -7,10 +7,13 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import { timeStamp } from "node:console";
 
-//
+//routes
+
 import authRoute from "./routes/authRoute.js";
 import userRoute from "./routes/userRoute.js";
 import categoryRoute from "./routes/categoryRoute.js";
+import expenseRoute from "./routes/expenseRoute.js";
+
 import globalErrorHandler from "./middleware/errorHandler.js";
 
 const app: Application = express();
@@ -31,6 +34,7 @@ app.get("/health", (req: Request, res: Response) => {
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1/category", categoryRoute);
+app.use("/api/v1/expense", expenseRoute);
 
 app.use(globalErrorHandler);
 
