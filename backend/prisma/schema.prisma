@@ -47,17 +47,41 @@ model Category {
   updated_at DateTime @updatedAt
 }
 
+
+enum ExpenseType{
+  PERSONAL
+  BUSINESS
+}
+
+enum ExpenseStatus {
+  PENDING          
+  APPROVED         
+  REJECTED         
+  REIMBURSED       
+  NOT_APPLICABLE    
+}
+
 model Expense {
   id               Int      @id @default(autoincrement())
   amount           Decimal
-  date             DateTime
-  transaction_type String
+  description      String
+
+  transaction_date DateTime
+  expense_type ExpenseType @default(PERSONAL)
+  status       ExpenseStatus @default(NOT_APPLICABLE)
+  
+  rejection_reason String?
+  receipt_url String?
+
 
   userId Int
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete:Cascade)
 
   categoryId Int
-  category   Category @relation(fields: [categoryId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id], onDelete:Restrict)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model CategoryBudget {
