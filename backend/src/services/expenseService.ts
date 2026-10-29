@@ -1,5 +1,9 @@
 import { prisma } from "../lib/prisma.js";
-import { ExpenseStatus, ExpenseType } from "../../generated/prisma/enums.js";
+import {
+  ExpenseStatus,
+  ExpenseType,
+  Role,
+} from "../../generated/prisma/enums.js";
 import AppError from "../utils/AppError.js";
 
 export interface CreateExpenseInput {
@@ -59,5 +63,41 @@ export class ExpenseServices {
 
     // finally returning it
     return expense;
+  }
+
+  // Getting an expense by id
+  static async getExpense(expenseId: number, userId: number, role: Role) {
+    // first checking the expense exists and also make sure that the passed params is a number
+    if (isNaN(expenseId)) throw new AppError("Invalid expense id", 404);
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+    });
+
+    if (!expense) throw new AppError("Expense Not Found", 404);
+
+    // if (role === Role.ADMIN && expense.expense_type === ExpenseType.BUSINESS) {
+    //   return expense;
+    // } else if (
+    //   role === Role.ADMIN &&
+    //   expense.expense_type === ExpenseType.PERSONAL
+    // ) {
+    //   throw new AppError("You do not have access to personal expenses", 403);
+    // }
+
+    if (role === Role.ADMIN) {
+      if (expense.expense_type !== ExpenseType.BUSINESS) {
+        throw new AppError("You do not have access to personal expenses", 403);
+      }
+      return expense;
+    }
+
+    //
+    if (role === Role.USER) {
+      if (expense.userId !== userId) {
+        throw new AppError("You can only access your own expenses", 403);
+      }
+
+      return expense;
+    }
   }
 }

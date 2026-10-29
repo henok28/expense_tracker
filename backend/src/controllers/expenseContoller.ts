@@ -14,3 +14,16 @@ export const createExpense = catchAsync(
     res.status(201).json({ status: "success", data: { expense } });
   },
 );
+
+export const getExpense = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user!.id;
+    const role = req.user!.role;
+
+    const id = Number(req.params.id);
+
+    const expense = await ExpenseServices.getExpense(id, userId, role);
+
+    res.status(200).json({ status: "success", data: { expense } });
+  },
+);
