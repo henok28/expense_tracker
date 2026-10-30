@@ -22,6 +22,28 @@ export interface GetExpenseQuery {
   userId?: number;
 }
 
+export interface UpdateExpenseInput {
+  amount?: number;
+  description?: string;
+  transaction_date?: string;
+  categoryId?: number;
+}
+
+// const filterObject = (
+//   obj: Record<string, unknown>,
+//   allowedFields: string[],
+// ): Record<string, unknown> => {
+//   const result: Record<string, unknown> = {};
+
+//   allowedFields.forEach((field) => {
+//     if (field in obj) {
+//       result[field] = obj[field];
+//     }
+//   });
+
+//   return result;
+// };
+
 export class ExpenseServices {
   static async createExpense(userId: number, body: CreateExpenseInput) {
     const { amount, description, transaction_date, expense_type, categoryId } =
@@ -129,5 +151,81 @@ export class ExpenseServices {
     }
 
     return expense;
+  }
+
+  static async updateExpense(
+    userId: number,
+    expenseId: number,
+    data: UpdateExpenseInput,
+  ) {
+    if (isNaN(expenseId)) throw new AppError("Invalid expense ID", 400);
+
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+    });
+
+    if (!expense) throw new AppError("Expense Not found", 404);
+
+    if (userId !== expense.userId)
+      throw new AppError("You can only update your own expense data", 403);
+
+    // Status lock
+    if (
+      expense.status === ExpenseStatus.APPROVED ||
+      expense.status === ExpenseStatus.REIMBURSED
+    ) {
+      throw new AppError(
+        "Cannot edit an expense that has already been approved or reimbursed",
+        400,
+      );
+    }
+
+    if (data.categoryId) {
+      const category = await prisma.category.findUnique({
+        where: {
+          id: data.categoryId,
+          OR: [{ userId }, { userId: null }],
+        },
+      });
+
+      if (!category)
+        throw new AppError(
+          "Category not found or you do not have access to it",
+          404,
+        );
+
+      if (
+        expense.expense_type === ExpenseType.BUSINESS &&
+        category.userId !== null
+      ) {
+        throw new AppError(
+          "Business expenses must be filed under a company-wide category",
+          400,
+        );
+      }
+    }
+
+    const updatedPayload: Prisma.ExpenseUpdateInput = {};
+
+    if (data.amount !== undefined) updatedPayload.amount = data.amount;
+    if (data.description !== undefined)
+      updatedPayload.description = data.description;
+    if (data.transaction_date !== undefined)
+      updatedPayload.transaction_date = new Date(data.transaction_date);
+
+    if (data.categoryId !== undefined) {
+      // updatedPayload.category = { connect: { id: data.categoryId } };
+      updatedPayload.category = { connect: { id: data.categoryId } };
+    }
+
+    const updatedExpense = await prisma.expense.update({
+      where: {
+        id: expenseId,
+      },
+      data: updatedPayload,
+      include: { category: true },
+    });
+
+    return updatedExpense;
   }
 }

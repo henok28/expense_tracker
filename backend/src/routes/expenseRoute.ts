@@ -4,6 +4,7 @@ import {
   createExpense,
   getAllExpenses,
   getExpense,
+  updateExpense,
 } from "../controllers/expenseContoller.js";
 
 const router = Router();
@@ -11,6 +12,6 @@ const router = Router();
 router.use(protect);
 
 router.route("/").post(createExpense).get(getAllExpenses);
-router.route("/:id").get(getExpense);
+router.route("/:id").get(getExpense).patch(updateExpense);
 
 export default router;

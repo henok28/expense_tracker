@@ -78,3 +78,18 @@ export const getAllExpenses = catchAsync(
     res.status(200).json({ status: "success", data: { expenses } });
   },
 );
+
+export const updateExpense = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user!.id;
+    const expenseId = Number(req.params.id);
+
+    const updatedData = await ExpenseServices.updateExpense(
+      userId,
+      expenseId,
+      req.body,
+    );
+
+    res.status(200).json({ status: "success", data: { expense: updatedData } });
+  },
+);
