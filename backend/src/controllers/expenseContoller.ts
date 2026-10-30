@@ -93,3 +93,14 @@ export const updateExpense = catchAsync(
     res.status(200).json({ status: "success", data: { expense: updatedData } });
   },
 );
+
+export const deleteExpense = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user!.id;
+    const expenseId = Number(req.params.id);
+
+    await ExpenseServices.deleteExpense(userId, expenseId);
+
+    res.status(204).json({ status: "success", data: { expense: null } });
+  },
+);
