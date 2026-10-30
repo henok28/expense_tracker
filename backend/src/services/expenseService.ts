@@ -228,4 +228,33 @@ export class ExpenseServices {
 
     return updatedExpense;
   }
+
+  static async deleteExpense(userId: number, expenseId: number) {
+    if (isNaN(expenseId)) throw new AppError("Invalid Id", 400);
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+    });
+
+    if (!expense) throw new AppError("Expense not found", 404);
+
+    // Checking for ownership
+    if (expense.userId !== userId)
+      throw new AppError("You can only delete your own expenses", 403);
+
+    if (
+      expense.status === ExpenseStatus.APPROVED ||
+      expense.status === ExpenseStatus.REIMBURSED ||
+      expense.status === ExpenseStatus.REJECTED
+    )
+      throw new AppError(
+        "You cant delete an expense that has been procceesed",
+        400,
+      );
+
+    // Deleting and returning null
+
+    await prisma.expense.delete({ where: { id: expenseId } });
+
+    return null;
+  }
 }
