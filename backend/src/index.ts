@@ -13,6 +13,7 @@ import authRoute from "./routes/authRoute.js";
 import userRoute from "./routes/userRoute.js";
 import categoryRoute from "./routes/categoryRoute.js";
 import expenseRoute from "./routes/expenseRoute.js";
+import reimbursementRoute from "./routes/reimbursementRoute.js";
 
 import globalErrorHandler from "./middleware/errorHandler.js";
 
@@ -35,6 +36,7 @@ app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1/category", categoryRoute);
 app.use("/api/v1/expense", expenseRoute);
+app.use("/api/v1/reimbursement", reimbursementRoute);
 
 app.use(globalErrorHandler);
 
