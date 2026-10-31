@@ -4,6 +4,7 @@ import { Role } from "../../generated/prisma/enums.js";
 import {
   approveClaim,
   getPendingClaims,
+  reimburseClaim,
   rejectClaim,
 } from "../controllers/reimbursementController.js";
 
@@ -14,5 +15,6 @@ router.route("/pending").get(getPendingClaims);
 
 router.route("/:id/approve").patch(approveClaim);
 router.route("/:id/reject").patch(rejectClaim);
+router.route("/:id/reimburse").patch(reimburseClaim);
 
 export default router;
