@@ -101,4 +101,37 @@ export class AdminExpenseService {
       },
     });
   }
+
+  static async reimburseClaim(expenseId: number) {
+    if (isNaN(expenseId)) throw new AppError("Invalid Id", 400);
+
+    // check if expense exist
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+    });
+
+    if (!expense) throw new AppError("Expense not found", 404);
+
+    // checking if expens is business and in pending state
+    if (expense.expense_type !== ExpenseType.BUSINESS)
+      throw new AppError(
+        "You can only update the state of expense that belong to business type",
+        400,
+      );
+
+    if (expense.status !== ExpenseStatus.APPROVED)
+      throw new AppError(
+        `cant update claim, only APPROVED states can be Reimbursed current state is ${expense.status}`,
+        400,
+      );
+
+    return await prisma.expense.update({
+      where: { id: expenseId },
+      data: { status: ExpenseStatus.REIMBURSED },
+      include: {
+        user: { select: { id: true, fullname: true, email: true } },
+        category: { select: { id: true, category_name: true } },
+      },
+    });
+  }
 }
