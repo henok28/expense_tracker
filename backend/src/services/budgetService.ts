@@ -184,4 +184,23 @@ export class BudgetService {
       },
     });
   }
+
+  static async deleteBudget(budgetId: number, userId: number, role: Role) {
+    if (isNaN(budgetId)) throw new AppError("Invalid budget ID", 400);
+    if (isNaN(userId)) throw new AppError("Invalid user ID", 400);
+
+    const budget = await prisma.categoryBudget.findUnique({
+      where: { id: budgetId },
+    });
+
+    if (!budget) throw new AppError("Budget not found", 404);
+
+    if (role === Role.ADMIN && budget.userId !== null)
+      throw new AppError("Admins can only delete a company-wide budget", 403);
+
+    if (role === Role.USER && budget.userId !== userId)
+      throw new AppError("You can only delete your own personal budgets", 403);
+
+    return await prisma.categoryBudget.delete({ where: { id: budget.id } });
+  }
 }
