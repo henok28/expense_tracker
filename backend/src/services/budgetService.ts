@@ -1,3 +1,4 @@
+import { Prisma } from "../../generated/prisma/client.js";
 import { Role } from "../../generated/prisma/enums.js";
 import { prisma } from "../lib/prisma.js";
 import AppError from "../utils/AppError.js";
@@ -9,7 +10,13 @@ export interface CreateBudgetInput {
   categoryId: number;
 }
 
-class BudgetService {
+export interface GetBudgetQuery {
+  month?: number;
+  year?: number;
+  categoryId?: number;
+}
+
+export class BudgetService {
   static async createBudget(
     userId: number,
     role: Role,
@@ -89,5 +96,47 @@ class BudgetService {
         },
       },
     });
+  }
+
+  static async getAllBudget(userId: number, role: Role, query: GetBudgetQuery) {
+    if (isNaN(userId)) throw new AppError("Invalid User ID", 400);
+
+    let where: Prisma.CategoryBudgetWhereInput = {};
+
+    let targetUserId: number | null = role === Role.ADMIN ? null : userId;
+    where = { ...query, userId: targetUserId };
+
+    return await prisma.categoryBudget.findMany({
+      where,
+      include: {
+        category: {
+          select: {
+            id: true,
+            category_name: true,
+          },
+        },
+      },
+      orderBy: [{ year: "desc" }, { month: "desc" }],
+    });
+  }
+
+  static async getBudget(budgetId: number, userId: number, role: Role) {
+    if (isNaN(budgetId)) throw new AppError("Invalid budget ID", 400);
+    if (isNaN(userId)) throw new AppError("Invalid user ID", 400);
+
+    const budget = await prisma.categoryBudget.findUnique({
+      where: { id: budgetId },
+      include: { category: { select: { id: true, category_name: true } } },
+    });
+
+    if (!budget) throw new AppError("Budget not found", 404);
+
+    if (role === Role.ADMIN && budget.userId !== null)
+      throw new AppError("Admins can only access a company-wide budget", 403);
+
+    if (role === Role.USER && budget.userId !== userId)
+      throw new AppError("You can only access your own personal budgets", 403);
+
+    return budget;
   }
 }
