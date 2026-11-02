@@ -139,4 +139,49 @@ export class BudgetService {
 
     return budget;
   }
+
+  static async updateBudget(
+    budgetId: number,
+    userId: number,
+    role: Role,
+    amount: number,
+  ) {
+    if (isNaN(budgetId)) throw new AppError("Invalid Budget ID", 400);
+    if (isNaN(userId)) throw new AppError("Invalid User ID", 400);
+
+    // Checking if a budget exist
+    const budget = await prisma.categoryBudget.findUnique({
+      where: {
+        id: budgetId,
+      },
+    });
+
+    if (!budget) throw new AppError("Budget not found", 404);
+
+    //Validating the data
+    if (!amount || amount <= 0)
+      throw new AppError("Amount should be greater than 0", 400);
+
+    if (role === Role.ADMIN && budget.userId !== null)
+      throw new AppError("Admins can only update a company-wide budget", 403);
+
+    if (role === Role.USER && userId !== budget.userId)
+      throw new AppError("You can only update your own personal budgets", 403);
+
+    // Saving the data and returning it
+    return await prisma.categoryBudget.update({
+      where: { id: budget.id },
+      data: {
+        amount,
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            category_name: true,
+          },
+        },
+      },
+    });
+  }
 }
