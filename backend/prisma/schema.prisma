@@ -31,6 +31,7 @@ model User {
 
   expenses Expense[]
   category Category[]
+  categoryBudget CategoryBudget[]
 }
 
 model Category {
@@ -83,13 +84,22 @@ model Expense {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
-
+//////////////////////////////////////////////////////
 model CategoryBudget {
   id     Int     @id @default(autoincrement())
   amount Decimal
+
   month  Int
   year   Int
 
   categoryId Int
   category   Category @relation(fields: [categoryId], references: [id])
+
+  userId Int?
+  user User? @relation(fields:[userId], references:[id], onDelete:Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([categoryId,month, year, userId])
 }
