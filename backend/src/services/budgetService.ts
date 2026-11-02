@@ -1,5 +1,9 @@
 import { Prisma } from "../../generated/prisma/client.js";
-import { Role } from "../../generated/prisma/enums.js";
+import {
+  ExpenseStatus,
+  ExpenseType,
+  Role,
+} from "../../generated/prisma/enums.js";
 import { prisma } from "../lib/prisma.js";
 import AppError from "../utils/AppError.js";
 
@@ -56,6 +60,12 @@ export class BudgetService {
         );
       }
     }
+
+    if (role === Role.ADMIN && category.userId !== null)
+      throw new AppError(
+        "Admin can only create budget for a company wide category",
+        403,
+      );
 
     // here i am checking for their role and settting the userId accordingly
     let targetUserId: number | null = role === Role.ADMIN ? null : userId;
@@ -201,6 +211,91 @@ export class BudgetService {
     if (role === Role.USER && budget.userId !== userId)
       throw new AppError("You can only delete your own personal budgets", 403);
 
-    return await prisma.categoryBudget.delete({ where: { id: budget.id } });
+    await prisma.categoryBudget.delete({ where: { id: budget.id } });
+  }
+
+  static async getBudgetSummary(userId: number, budgetId: number, role: Role) {
+    if (isNaN(userId)) throw new AppError("Invalid user ID", 400);
+    if (isNaN(budgetId)) throw new AppError("Invalid Budget ID", 400);
+
+    // finding the budget
+    const budget = await prisma.categoryBudget.findUnique({
+      where: {
+        id: budgetId,
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            category_name: true,
+          },
+        },
+      },
+    });
+
+    if (!budget) throw new AppError("Budget Not found", 404);
+
+    if (role === Role.ADMIN && budget.userId !== null)
+      throw new AppError("Admins can only access company budgets", 403);
+    if (role === Role.USER && budget.userId !== userId)
+      throw new AppError("You can only access your own personal budgets", 403);
+
+    const startDate = new Date(
+      Date.UTC(budget?.year, budget.month - 1, 1, 0, 0, 0),
+    );
+    const endDate = new Date(Date.UTC(budget.year, budget.month, 1, 0, 0, 0));
+
+    // const expenses = await prisma.expense.findMany({
+    //   where: {
+    //     transaction_date: {
+    //       gte: startDate,
+    //       lt: endDate,
+    //     },
+    //   },
+    // });
+
+    const expenses = await prisma.expense.aggregate({
+      where: {
+        categoryId: budget.categoryId,
+        transaction_date: {
+          gte: startDate,
+          lt: endDate,
+        },
+
+        ...(budget.userId
+          ? { userId: budget.userId }
+          : {
+              expense_type: ExpenseType.BUSINESS,
+              status: {
+                in: [ExpenseStatus.APPROVED, ExpenseStatus.REIMBURSED],
+              },
+            }),
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const budgetLimit = Number(budget.amount);
+    const actualSpent = Number(expenses._sum.amount);
+
+    // Math calculation
+    const remainingBudget = budgetLimit - actualSpent;
+
+    const percentage = budgetLimit >= 0 ? (actualSpent / budgetLimit) * 100 : 0;
+
+    const isOverBudget = actualSpent > budgetLimit;
+
+    return {
+      budgetId: budget.id,
+      category: budget.category,
+      month: budget.month,
+      year: budget.year,
+      budgetLimit,
+      actualSpent,
+      remainingBudget,
+      percentage,
+      isOverBudget,
+    };
   }
 }
