@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import catchAsync from "../utils/catchAsync.js";
 import { BudgetService, GetBudgetQuery } from "../services/budgetService.js";
+import AppError from "../utils/AppError.js";
 
 export const createBudget = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -78,5 +79,21 @@ export const deleteBudget = catchAsync(
     await BudgetService.deleteBudget(budgetId, userId, role);
 
     res.status(204).json({ status: "success", data: null });
+  },
+);
+
+export const getBudgetSummary = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user!.id;
+    const budgetId = Number(req.params.id);
+    const role = req.user.role;
+
+    const summary = await BudgetService.getBudgetSummary(
+      userId,
+      budgetId,
+      role,
+    );
+
+    res.status(200).json({ status: "success", data: { summary } });
   },
 );
