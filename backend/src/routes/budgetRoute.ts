@@ -5,6 +5,7 @@ import {
   deleteBudget,
   getAllBudgets,
   getBudget,
+  getBudgetSummary,
   updateBudget,
 } from "../controllers/budgetController.js";
 
@@ -12,6 +13,8 @@ const router = Router();
 router.use(protect);
 
 router.route("/").post(createBudget).get(getAllBudgets);
+
+router.route("/:id/summary").get(getBudgetSummary);
 
 router.route("/:id").get(getBudget).patch(updateBudget).delete(deleteBudget);
 

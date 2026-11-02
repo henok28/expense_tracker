@@ -38,7 +38,6 @@ app.use("/api/v1/users", userRoute);
 app.use("/api/v1/category", categoryRoute);
 app.use("/api/v1/expense", expenseRoute);
 app.use("/api/v1/reimbursement", reimbursementRoute);
-
 app.use("/api/v1/budget", budgetRoute);
 
 app.use(globalErrorHandler);
