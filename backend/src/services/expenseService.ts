@@ -6,6 +6,7 @@ import {
 } from "../../generated/prisma/enums.js";
 import AppError from "../utils/AppError.js";
 import { Prisma } from "../../generated/prisma/client.js";
+import fs from "fs/promises"; //for file upload
 
 export interface CreateExpenseInput {
   amount: number;
@@ -227,6 +228,82 @@ export class ExpenseServices {
     });
 
     return updatedExpense;
+  }
+
+  static async attachReceipt(
+    userId: number,
+    expenseId: number,
+    role: Role,
+    filePath: string,
+  ) {
+    const cleanupNewFile = async () => {
+      await fs.unlink(filePath);
+    };
+    //1. Guard against non-numeric ID
+    if (isNaN(expenseId)) throw new AppError("Invalid Expense ID", 400);
+
+    // 2. Verify expense exists
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+    });
+    if (!expense) throw new AppError("Expense Not Found", 404);
+
+    // 3. Ownership Guard: Only the owner (or an Admin) can upload a receipt
+    if (role !== Role.ADMIN && expense.userId !== userId)
+      throw new AppError(
+        "You can only upload receipts for your own expenses",
+        403,
+      );
+
+    // 4. Financial Audit Lock: Cannot alter approved or reimbursed claims
+
+    if (expense.status === ExpenseStatus.NOT_APPLICABLE) {
+      await cleanupNewFile();
+      throw new AppError(
+        "Receipts can only be uploaded for Business reimbursable claims, not Personal expenses",
+        400,
+      );
+    }
+    if (expense.status === ExpenseStatus.REJECTED) {
+      await cleanupNewFile();
+      throw new AppError(
+        "Cannot upload receipts for a REJECTED claim. Please file a new claim.",
+        400,
+      );
+    }
+
+    if (
+      expense.status === ExpenseStatus.APPROVED ||
+      expense.status === ExpenseStatus.REIMBURSED
+    ) {
+      await cleanupNewFile();
+      throw new AppError(
+        "Cannot upload or change receipt for an expense that has already been approved or reimbursed",
+        400,
+      );
+    }
+
+    // check if it has a recipt and if it does i will delete it form the fiel and then write the new one
+    //  Cleanup Old File (Prevent orphaned files taking up disk space)
+
+    // 5. Cleanup Old File (Prevent orphaned files taking up disk space)
+
+    if (expense.receipt_url) {
+      try {
+        await fs.unlink(expense.receipt_url);
+      } catch (error) {
+        console.warn(
+          `Could not delete old receipt file: ${expense.receipt_url}`,
+        );
+      }
+    }
+
+    // 6. Update database with new receipt path
+    return await prisma.expense.update({
+      where: { id: expense.id },
+      data: { receipt_url: filePath },
+      include: { category: true },
+    });
   }
 
   static async deleteExpense(userId: number, expenseId: number) {
