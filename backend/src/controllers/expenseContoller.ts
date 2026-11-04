@@ -1,3 +1,5 @@
+import path from "path";
+import fs from "fs";
 import { Request, Response, NextFunction } from "express";
 import {
   ExpenseServices,
@@ -126,6 +128,32 @@ export const attachReceipt = catchAsync(
       message: "Receipt uploaded successfully",
       data: { expense: updatedExpense },
     });
+  },
+);
+
+//
+export const getExpenseReceipt = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const expenseId = Number(req.params.id);
+    const userId = req.user!.id;
+    const role = req.user.role;
+
+    // Getting the stored relative path
+    const receiptPath = await ExpenseServices.getRecipt(
+      userId,
+      expenseId,
+      role,
+    );
+
+    // Resolving it
+    const absolutePath = path.resolve(receiptPath);
+
+    // checking if it exist on the disk
+    if (!fs.existsSync(absolutePath)) {
+      return next(new AppError("Receipt file not found on disk", 404));
+    }
+
+    res.sendFile(absolutePath);
   },
 );
 

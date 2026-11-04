@@ -306,6 +306,30 @@ export class ExpenseServices {
     });
   }
 
+  static async getRecipt(userId: number, expeseId: number, role: Role) {
+    if (isNaN(expeseId)) throw new AppError("Invalid Expense ID", 400);
+
+    // Chcking if expense exist
+    const expense = await prisma.expense.findUnique({
+      where: { id: expeseId },
+    });
+
+    if (!expense) throw new AppError("Expense Not Found", 404);
+
+    // Checking for ownership
+    if (role !== Role.ADMIN && userId !== expense.userId)
+      throw new AppError(
+        "You can only view receipts for your own expenses",
+        403,
+      );
+
+    // Verify if this expense have a receipt
+    if (!expense.receipt_url)
+      throw new AppError("No receipt has been uploaded for this expense", 404);
+
+    return expense.receipt_url;
+  }
+
   static async deleteExpense(userId: number, expenseId: number) {
     if (isNaN(expenseId)) throw new AppError("Invalid Id", 400);
     const expense = await prisma.expense.findUnique({
