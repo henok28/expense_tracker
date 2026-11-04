@@ -94,6 +94,41 @@ export const updateExpense = catchAsync(
   },
 );
 
+export const attachReceipt = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // 1. Verify that Multer actually received and processed a file
+
+    if (!req.file) {
+      return next(
+        new AppError(
+          "Please provide a receipt file in the 'receipt' field",
+          400,
+        ),
+      );
+    }
+
+    const userId = req.user!.id;
+    const role = req.user.role;
+    const expenseId = Number(req.params.id);
+
+    // 2. req.file.path contains the disk path (e.g. "uploads/receipts/receipt-user-1-...")
+
+    const updatedExpense = await ExpenseServices.attachReceipt(
+      userId,
+      expenseId,
+      role,
+      req.file.path,
+    );
+
+    // 3. Respond with 200 OK and updated expense data
+    res.status(200).json({
+      status: "success",
+      message: "Receipt uploaded successfully",
+      data: { expense: updatedExpense },
+    });
+  },
+);
+
 export const deleteExpense = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user!.id;
