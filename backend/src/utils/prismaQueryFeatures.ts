@@ -10,6 +10,7 @@ export class PrismaQueryFeatures {
   public take: number | undefined;
   public orderBy: PrismaOrderBy[] | PrismaOrderBy | undefined;
   public where: Record<string, any> = {};
+  public select: Record<string, boolean> | undefined;
 
   constructor(queryString: Record<string, any>) {
     this.queryString = queryString;
@@ -122,6 +123,32 @@ export class PrismaQueryFeatures {
     this.where = formattedWhere;
 
     //
+    return this;
+  }
+
+  /**
+   * 4. FIELD LIMITING / SELECTION
+   * Converts ?fields=amount,description,status into Prisma's:
+   * select: { amount: true, description: true, status: true }
+   */
+  public limitFields(): this {
+    //
+    if (
+      this.queryString.fields &&
+      typeof this.queryString.fields === "string"
+    ) {
+      const fields = this.queryString.fields.split(",");
+      const selectObj: Record<string, boolean> = {};
+
+      fields.forEach((field) => {
+        const trimmed = field.trim();
+        if (trimmed) {
+          selectObj[trimmed] = true;
+        }
+      });
+
+      this.select = selectObj;
+    }
     return this;
   }
 }
